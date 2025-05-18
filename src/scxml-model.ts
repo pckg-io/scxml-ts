@@ -252,7 +252,7 @@ export interface SCXMLStructureVisitor<R = void> {
 /* --------------------------------------------------------------------- */
 
 /** <scxml> — the document root (Spec §3.4). */
-export class SCXML extends SCXMLElementBase {
+export class SCXML {
   public readonly version: Version;
   public readonly profile?: string; // e.g. minimum profile
   public readonly initial?: TransitionTarget;
@@ -261,9 +261,9 @@ export class SCXML extends SCXMLElementBase {
   public readonly datamodel?: Datamodel;
   public readonly bindings?: "early" | "late"; // Spec §3.4.4
   public readonly script?: Script; // optional global script
+  public readonly doc?: string;
 
   constructor(options: {
-    id?: string;
     version?: Version;
     profile?: string;
     initial?: TransitionTarget;
@@ -274,7 +274,6 @@ export class SCXML extends SCXMLElementBase {
     script?: Script;
     doc?: string;
   }) {
-    super(options.id ?? "root", options.doc);
     this.version = options.version ?? "1.0";
     this.profile = options.profile;
     this.initial = options.initial;
@@ -283,6 +282,7 @@ export class SCXML extends SCXMLElementBase {
     this.datamodel = options.datamodel;
     this.bindings = options.bindings;
     this.script = options.script;
+    this.doc = options.doc;
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
@@ -848,13 +848,15 @@ export function toSCXML(doc: SCXML, opt: SerialiserOptions = {}): string {
     }
   };
 
+  // Add XML declaration
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>${ctx.nl}`;
+  
   /* Root <scxml> */
-  let xml = open("scxml", {
-    xmlns: doc.xmlns.scxml,
-    version: doc.version,
+  xml += open("scxml", {
+    xmlns: "http://www.w3.org/2005/07/scxml",
+    version: doc.version || "1.0",
     profile: doc.profile,
     initial: doc.initial,
-    id: doc.id,
     bindings: doc.bindings,
     ...Object.fromEntries(
       Object.entries(doc.xmlns)

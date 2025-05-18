@@ -244,7 +244,6 @@ export function parseSCXML(xml: string): SCXML {
   }
 
   const scxml = new SCXML({
-    id: attr(root, "id") ?? "root",
     version: attr(root, "version") ?? "1.0",
     profile: attr(root, "profile") ?? undefined,
     initial: attr(root, "initial") as any,

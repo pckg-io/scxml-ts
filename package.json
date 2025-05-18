@@ -1,0 +1,30 @@
+{
+  "name": "scxml-ts",
+  "version": "0.1.0",
+  "description": "TypeScript implementation of the W3C SCXML 1.0 data model, parser, serializer, and utilities.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "jest",
+    "lint": "eslint . --ext .ts"
+  },
+  "keywords": [
+    "scxml",
+    "state machine",
+    "typescript"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@xmldom/xmldom": "^0.8.10",
+    "xmllint-wasm": "^4.0.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "ts-jest": "^29.0.0",
+    "@types/jest": "^29.0.0",
+    "eslint": "^9.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0"
+  }
+}

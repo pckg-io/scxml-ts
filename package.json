@@ -7,7 +7,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "jest",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix"
   },
   "keywords": [
     "scxml",
@@ -20,11 +21,12 @@
     "xmllint-wasm": "^4.0.2"
   },
   "devDependencies": {
-    "typescript": "^5.4.0",
-    "ts-jest": "^29.0.0",
     "@types/jest": "^29.0.0",
-    "eslint": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.0.0"
+    "eslint": "^9.0.0",
+    "jiti": "^2.4.2",
+    "ts-jest": "^29.0.0",
+    "typescript": "^5.4.0"
   }
 }

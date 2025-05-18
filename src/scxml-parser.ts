@@ -167,7 +167,7 @@ function parseInvoke(el: Element): Invoke {
   const params = Object.fromEntries(
     Array.from(el.getElementsByTagName("param")).map(p => [attr(p, "name")!, attr(p, "expr")!])
   );
-  let finalizeEl = el.getElementsByTagName("finalize").item(0);
+  const finalizeEl = el.getElementsByTagName("finalize").item(0);
   let finalize: Finalize | undefined = undefined;
   if (finalizeEl) {
     finalize = new Finalize({

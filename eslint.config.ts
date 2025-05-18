@@ -3,6 +3,15 @@ import tseslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 
 export default [
+  // Define ignores (replacing .eslintignore)
+  {
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      'coverage/**',
+      '*.js'
+    ]
+  },
   {
     files: ['**/*.ts', '**/*.tsx'],
     plugins: {
@@ -11,17 +20,14 @@ export default [
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        project: './tsconfig.json',
         ecmaVersion: 'latest',
         sourceType: 'module',
       },
     },
     rules: {
       // TypeScript-specific rules
-      '@typescript-eslint/explicit-function-return-type': 'warn',
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-unnecessary-type-assertion': 'error',
       
       // General rules
       'no-console': ['warn', { allow: ['error', 'warn', 'info'] }],

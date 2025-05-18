@@ -28,7 +28,7 @@ import {
 
 function attr(el: Element, name: string): string | undefined {
   const v = el.getAttribute(name);
-  return v === null ? undefined : v;
+  return v === null || v === "" ? undefined : v;
 }
 
 function splitQNameList(v?: string | null): string | undefined {
@@ -40,19 +40,19 @@ function parseExecutable(el: Element): ExecutableContent {
     case "raise":
       return { type: "raise", event: attr(el, "event")!, accept: () => { /* dummy */ } } as Raise;
     case "log":
-      return { type: "log", label: attr(el, "label"), expr: attr(el, "expr"), accept: () => {} } as Log;
+      return { type: "log", label: attr(el, "label"), expr: attr(el, "expr"), accept: ((v: any) => undefined as any) as any } as Log;
     case "cancel":
-      return { type: "cancel", sendid: attr(el, "sendid")!, accept: () => {} } as Cancel;
+      return { type: "cancel", sendid: attr(el, "sendid")!, accept: ((v: any) => undefined as any) as any } as Cancel;
     case "assign":
       return {
         type: "assign",
         location: attr(el, "location")!,
         expr: attr(el, "expr"),
         src: attr(el, "src"),
-        accept: () => {}
+        accept: ((v: any) => undefined as any) as any
       } as Assign;
     case "script":
-      return { type: "script", content: el.textContent ?? "", accept: () => {} } as Script;
+      return { type: "script", content: el.textContent ?? "", accept: ((v: any) => undefined as any) as any } as Script;
     case "send":
       return {
         type: "send",
@@ -64,7 +64,7 @@ function parseExecutable(el: Element): ExecutableContent {
           Array.from(el.getElementsByTagName("param")).map(p => [attr(p, "name")!, attr(p, "expr")!])
         ),
         content: el.textContent?.trim() ?? undefined,
-        accept: () => {}
+        accept: ((v: any) => undefined as any) as any
       } as Send;
     case "if": {
       const thenBody: ExecutableContent[] = [];
@@ -105,7 +105,7 @@ function parseExecutable(el: Element): ExecutableContent {
         then: thenBody,
         elseIfs: elseIfs.length ? elseIfs : undefined,
         else: elseNode,
-        accept: () => {}
+        accept: ((v: any) => undefined as any) as any
       } as If;
     }
     case "foreach":
@@ -117,7 +117,7 @@ function parseExecutable(el: Element): ExecutableContent {
         body: Array.from(el.childNodes)
           .filter(nn => nn.nodeType == nn.ELEMENT_NODE)
           .map(nn => parseExecutable(nn as Element)),
-        accept: () => {}
+        accept: ((v: any) => undefined as any) as any
       } as Foreach;
     default:
       return {

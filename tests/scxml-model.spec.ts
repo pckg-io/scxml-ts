@@ -6,41 +6,66 @@ import { SCXML, toSCXML, State } from "../src/scxml-model";
 import { parseSCXML } from "../src/scxml-parser";
 import { validateXML } from "xmllint-wasm";
 
-const XSD_URL = "https://www.w3.org/2005/07/scxml.xsd";
-const XSD_CACHE = path.join(__dirname, "scxml.xsd");
+const SCHEMA_URLS = [
+  "https://www.w3.org/2011/04/SCXML/scxml.xsd",
+  "https://www.w3.org/2011/04/SCXML/scxml-module-core.xsd",
+  "https://www.w3.org/2011/04/SCXML/scxml-module-data.xsd",
+  "https://www.w3.org/2011/04/SCXML/scxml-module-external.xsd",
+  "https://www.w3.org/2001/xml.xsd",
+];
 
-async function fetchXSD(): Promise<string> {
-  if (fs.existsSync(XSD_CACHE)) return fs.readFileSync(XSD_CACHE, "utf8");
-  const data = await new Promise<string>((resolve, reject) => {
-    https.get(XSD_URL, (res) => {
-      let d = "";
-      res.on("data", (c) => (d += c));
-      res.on("end", () => resolve(d));
+const CACHE_DIR = path.join(__dirname, "schema-cache");
+if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR);
+
+function download(url: string, dest: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (fs.existsSync(dest)) return resolve();
+    https.get(url, (res) => {
+      const file = fs.createWriteStream(dest);
+      res.pipe(file);
+      file.on("finish", () => file.close(() => resolve()));
     }).on("error", reject);
   });
-  fs.writeFileSync(XSD_CACHE, data, "utf8");
-  return data;
+}
+
+async function loadSchemas() {
+  const entries: { fileName: string; contents: string }[] = [];
+  for (const url of SCHEMA_URLS) {
+    const fname = path.join(CACHE_DIR, path.basename(url));
+    await download(url, fname);
+    
+    let fileName = path.basename(url);
+    let contents = fs.readFileSync(fname, "utf8");
+    if (fileName === "scxml.xsd") {
+      contents = contents.replace("http://www.w3.org/2001/xml.xsd", "xml.xsd");
+    }
+    entries.push({ fileName, contents });
+
+  }
+  return entries;
 }
 
 describe("SCXML model", () => {
-  let xsdStr: string;
+  let schemas: { fileName: string; contents: string }[];
 
   beforeAll(async () => {
-    xsdStr = await fetchXSD();
+    schemas = await loadSchemas();
   });
 
   it("produces XSD-valid serialisation", async () => {
     const machine = new SCXML({
       id: "m",
+      initial: "s" as any,
       children: [new State({ id: "s" })],
     });
-    const xml = toSCXML(machine);
+    const xmlDoc = toSCXML(machine);
 
     const result = await validateXML({
-      xml: [xml],
-      schema: [xsdStr],
+      xml: [{ fileName: "doc.xml", contents: xmlDoc }],
+      schema: schemas as any,
     });
 
+    if (!result.valid) console.error(result.errors);
     expect(result.valid).toBe(true);
   });
 
@@ -52,7 +77,6 @@ describe("SCXML model", () => {
     const first = toSCXML(machine);
     const parsed = parseSCXML(first);
     const second = toSCXML(parsed);
-
     expect(first).toStrictEqual(second);
   });
 });

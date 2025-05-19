@@ -69,7 +69,7 @@ export async function validateXML(xmlContent: string): Promise<ValidationResult>
 
     try {
       // Run xmllint
-      const { stdout, stderr } = await execPromise(command);
+      const { stdout } = await execPromise(command);
       
       // If we get here, the validation succeeded
       if (stdout.includes('validates') || stdout === '') {

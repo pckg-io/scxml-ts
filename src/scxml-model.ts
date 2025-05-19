@@ -65,7 +65,7 @@ export type XPathExpr = string;
 export type MimeType = string;
 
 /** IDREF (Spec §B.10).  We use branded‑type trickery for extra safety. */
-export type IDREF<T extends { id: string }> = string & {
+export type IDREF<_T extends { id: string }> = string & {
   readonly __idrefBrand: unique symbol;
 };
 
@@ -789,8 +789,12 @@ export function toSCXML(doc: SCXML, opt: SerialiserOptions = {}): string {
   const emitHistory = (h: History): string => {
     let s = open("history", { id: h.id, type: h.type });
     ctx.depth++;
-    h.onentry && (s += emitOnX("onentry", h.onentry));
-    h.onexit && (s += emitOnX("onexit", h.onexit));
+    if(h.onentry) {
+      s += emitOnX("onentry", h.onentry)
+    }
+    if(h.onexit) {
+      s += emitOnX("onexit", h.onexit)
+    }
     h.transitions.forEach((t) => (s += emitTransition(t)));
     ctx.depth--;
     s += close("history");

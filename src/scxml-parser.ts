@@ -16,10 +16,10 @@
 
 import { DOMParser } from "@xmldom/xmldom";
 import {
-  SCXML, State, Parallel, Final, History, Transition, Datamodel, Data,
+  SCXML, State, Parallel, Final, History, Transition, TransitionTarget, /* Datamodel, Data, */
   OnEntry, OnExit, Invoke, Finalize,
   Raise, Send, Log, Cancel, Assign, If, ElseIf, Else, Foreach, Script,
-  ExecutableContent
+  ExecutableContent, ExecutableContentVisitor
 } from "./scxml-model";
 
 /* --------------------------------------------------------------------- */
@@ -38,21 +38,38 @@ function splitQNameList(v?: string | null): string | undefined {
 function parseExecutable(el: Element): ExecutableContent {
   switch (el.tagName) {
     case "raise":
-      return { type: "raise", event: attr(el, "event")!, accept: () => { /* dummy */ } } as Raise;
+      return {
+        type: "raise",
+        event: attr(el, "event")!,
+        accept: () => { /* dummy */ } 
+      } as Raise;
     case "log":
-      return { type: "log", label: attr(el, "label"), expr: attr(el, "expr"), accept: ((v: any) => undefined as any) as any } as Log;
+      return {
+        type: "log",
+        label: attr(el, "label"),
+        expr: attr(el, "expr"),
+        accept: (<R>(_v: ExecutableContentVisitor<R>) => undefined as R) 
+      } as Log;
     case "cancel":
-      return { type: "cancel", sendid: attr(el, "sendid")!, accept: ((v: any) => undefined as any) as any } as Cancel;
+      return { 
+        type: "cancel", 
+        sendid: attr(el, "sendid")!, 
+        accept: (<R>(_v: ExecutableContentVisitor<R>) => undefined as R)
+      } as Cancel;
     case "assign":
       return {
         type: "assign",
         location: attr(el, "location")!,
         expr: attr(el, "expr"),
         src: attr(el, "src"),
-        accept: ((v: any) => undefined as any) as any
+        accept: (<R>(_v: ExecutableContentVisitor<R>) => undefined as R)
       } as Assign;
     case "script":
-      return { type: "script", content: el.textContent ?? "", accept: ((v: any) => undefined as any) as any } as Script;
+      return {
+        type: "script",
+        content: el.textContent ?? "",
+        accept: (<R>(_v: ExecutableContentVisitor<R>) => undefined as R)
+      } as Script;
     case "send":
       return {
         type: "send",
@@ -64,7 +81,7 @@ function parseExecutable(el: Element): ExecutableContent {
           Array.from(el.getElementsByTagName("param")).map(p => [attr(p, "name")!, attr(p, "expr")!])
         ),
         content: el.textContent?.trim() ?? undefined,
-        accept: ((v: any) => undefined as any) as any
+        accept: (<R>(_v: ExecutableContentVisitor<R>) => undefined as R)
       } as Send;
     case "if": {
       const thenBody: ExecutableContent[] = [];
@@ -82,7 +99,7 @@ function parseExecutable(el: Element): ExecutableContent {
               then: Array.from(c.childNodes)
                 .filter(nn => nn.nodeType === nn.ELEMENT_NODE)
                 .map(nn => parseExecutable(nn as Element)),
-              accept: ((v: any) => undefined as any) as any
+              accept: (<R>(_v: ExecutableContentVisitor<R>) => undefined as R)
             });
             break;
           case "else":
@@ -91,7 +108,7 @@ function parseExecutable(el: Element): ExecutableContent {
               then: Array.from(c.childNodes)
                 .filter(nn => nn.nodeType === nn.ELEMENT_NODE)
                 .map(nn => parseExecutable(nn as Element)),
-              accept: ((v: any) => undefined as any) as any
+              accept: (<R>(_v: ExecutableContentVisitor<R>) => undefined as R)
             };
             break;
           default:
@@ -105,7 +122,7 @@ function parseExecutable(el: Element): ExecutableContent {
         then: thenBody,
         elseIfs: elseIfs.length ? elseIfs : undefined,
         else: elseNode,
-        accept: ((v: any) => undefined as any) as any
+        accept: (<R>(_v: ExecutableContentVisitor<R>) => undefined as R)
       } as If;
     }
     case "foreach":
@@ -117,7 +134,7 @@ function parseExecutable(el: Element): ExecutableContent {
         body: Array.from(el.childNodes)
           .filter(nn => nn.nodeType == nn.ELEMENT_NODE)
           .map(nn => parseExecutable(nn as Element)),
-        accept: ((v: any) => undefined as any) as any
+        accept: (<R>(_v: ExecutableContentVisitor<R>) => undefined as R)
       } as Foreach;
     default:
       return {
@@ -125,7 +142,7 @@ function parseExecutable(el: Element): ExecutableContent {
         name: el.tagName,
         attributes: Object.fromEntries(Array.from(el.attributes).map(a => [a.name, a.value])),
         body: el.textContent || undefined,
-        accept: ((v: any) => undefined as any) as any
+        accept: (<R>(_v: ExecutableContentVisitor<R>) => undefined as R)
       };
   }
 }
@@ -147,8 +164,8 @@ function parseTransition(el: Element): Transition {
     id: attr(el, "id") ?? "",
     event: attr(el, "event") ?? undefined,
     cond: attr(el, "cond") ?? undefined,
-    target: attr(el, "target")?.split(/\s+/) as any,
-    type: (attr(el, "type") as any) ?? undefined,
+    target: attr(el, "target")?.split(/\s+/) as (TransitionTarget | TransitionTarget[]),
+    type: (attr(el, "type") as "internal" | "external") ?? undefined,
     execution: Array.from(el.childNodes)
       .filter(n => n.nodeType === n.ELEMENT_NODE)
       .map(n => parseExecutable(n as Element)),
@@ -158,7 +175,7 @@ function parseTransition(el: Element): Transition {
 function parseHistory(el: Element): History {
   return new History({
     id: attr(el, "id") ?? "",
-    type: (attr(el, "type") as any) ?? "shallow",
+    type: (attr(el, "type") as "shallow" | "deep") ?? "shallow",
     transitions: Array.from(el.getElementsByTagName("transition")).map(parseTransition)
   });
 }
@@ -198,7 +215,7 @@ function parseStateLike(el: Element): State | Parallel | Final {
       const invokes = Array.from(el.getElementsByTagName("invoke")).map(parseInvoke);
       return new State({
         id: attr(el, "id") ?? "",
-        initial: attr(el, "initial") as any,
+        initial: attr(el, "initial") as TransitionTarget,
         onentry: parseOnX(el.getElementsByTagName("onentry").item(0) ?? undefined),
         onexit: parseOnX(el.getElementsByTagName("onexit").item(0) ?? undefined),
         transitions: Array.from(el.getElementsByTagName("transition")).map(parseTransition),
@@ -246,8 +263,8 @@ export function parseSCXML(xml: string): SCXML {
   const scxml = new SCXML({
     version: attr(root, "version") ?? "1.0",
     profile: attr(root, "profile") ?? undefined,
-    initial: attr(root, "initial") as any,
-    bindings: (attr(root, "bindings") as any) ?? undefined,
+    initial: attr(root, "initial") as TransitionTarget,
+    bindings: (attr(root, "bindings") as "early" | "late") ?? undefined,
     children: Array.from(root.childNodes)
       .filter(n => n.nodeType === n.ELEMENT_NODE && (n as Element).tagName.match(/^(state|parallel|final)$/))
       .map(n => parseStateLike(n as Element)),

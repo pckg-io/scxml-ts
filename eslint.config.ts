@@ -26,8 +26,8 @@ export default [
     },
     rules: {
       // TypeScript-specific rules
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^_', argsIgnorePattern: '^_',  }],
       
       // General rules
       'no-console': ['warn', { allow: ['error', 'warn', 'info'] }],

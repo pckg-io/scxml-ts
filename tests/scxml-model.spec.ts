@@ -2,22 +2,18 @@ import { SCXML, State, toSCXML } from "../src/scxml-model";
 import { parseSCXML } from "../src/scxml-parser";
 import { validateXML } from "./custom-xml-validator";
 
-/* ------------------------------------------------------------------ */
-/*  Jest tests                                                         */
-/* ------------------------------------------------------------------ */
-
 describe("SCXML model", () => {
   
   it("serialises to XSD-valid SCXML", async () => {
-    // According to the schema, SCXML elements should NOT have an ID attribute
+    
     const doc = new SCXML({
-      initial: "s" as any, // branded TransitionTarget
+      initial: "s" as any,
       children: [new State({ id: "s" })],
     });
 
     const xml = toSCXML(doc);
     
-    // Validate against the W3C SCXML schema using our native xmllint CLI validator
+    // Act
     const result = await validateXML(xml);
     
     if (!result.valid) {

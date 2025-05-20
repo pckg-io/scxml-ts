@@ -414,15 +414,15 @@ export class History extends SCXMLElementBase {
 }
 
 /** <transition> — Spec §3.8 */
-export class Transition extends SCXMLElementBase {
+export class Transition {
   public readonly event?: EventName | EventName[]; // list space‑separated OK
   public readonly cond?: XPathExpr;
   public readonly target?: TransitionTarget | TransitionTarget[];
   public readonly type?: "internal" | "external"; // external default
   public readonly execution: ExecutableContent[];
+  public readonly doc?: string;
 
   constructor(options: {
-    id: string;
     event?: EventName | EventName[];
     cond?: XPathExpr;
     target?: TransitionTarget | TransitionTarget[];
@@ -430,12 +430,12 @@ export class Transition extends SCXMLElementBase {
     execution?: ExecutableContent[];
     doc?: string;
   }) {
-    super(options.id, options.doc);
     this.event = options.event;
     this.cond = options.cond;
     this.target = options.target;
     this.type = options.type ?? "external";
     this.execution = options.execution ?? [];
+    this.doc = options.doc;
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
@@ -539,12 +539,13 @@ export class Data extends SCXMLElementBase {
 }
 
 /** <onentry> — Spec §5 (container) */
-export class OnEntry extends SCXMLElementBase {
+export class OnEntry {
   public readonly execution: ExecutableContent[];
+  public readonly doc?: string;
 
   constructor(options: { id: string; execution?: ExecutableContent[]; doc?: string }) {
-    super(options.id, options.doc);
     this.execution = options.execution ?? [];
+    this.doc = options.doc;
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
@@ -553,12 +554,13 @@ export class OnEntry extends SCXMLElementBase {
 }
 
 /** <onexit> — Spec §5 (container) */
-export class OnExit extends SCXMLElementBase {
+export class OnExit {
   public readonly execution: ExecutableContent[];
+  public readonly doc?: string;
 
   constructor(options: { id: string; execution?: ExecutableContent[]; doc?: string }) {
-    super(options.id, options.doc);
     this.execution = options.execution ?? [];
+    this.doc = options.doc;
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
@@ -713,7 +715,7 @@ export function toSCXML(doc: SCXML, opt: SerialiserOptions = {}): string {
 
   const emitOnX = (tag: "onentry" | "onexit", ox?: OnEntry | OnExit): string => {
     if (!ox) return "";
-    let s = open(tag, { id: ox.id });
+    let s = open(tag, { });
     ctx.depth++;
     ox.execution.forEach((ec) => (s += emitExecutable(ec)));
     ctx.depth--;
@@ -740,7 +742,6 @@ export function toSCXML(doc: SCXML, opt: SerialiserOptions = {}): string {
 
   const emitTransition = (t: Transition): string => {
     let s = open("transition", {
-      id: t.id,
       event: Array.isArray(t.event) ? t.event.join(" ") : t.event,
       cond: t.cond,
       target: Array.isArray(t.target) ? t.target.join(" ") : t.target,

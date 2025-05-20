@@ -1,6 +1,9 @@
 <?xml version="1.0" ?>
-<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0"
-       initial="on" datamodel="ecmascript" name="calc">
+<scxml xmlns="http://www.w3.org/2005/07/scxml" 
+       version="1.0"
+       initial="on"
+       datamodel="ecmascript"
+       name="calc">
     <datamodel>
          <data id="long_expr" />
          <data id="short_expr" expr="0" />
@@ -140,10 +143,10 @@
         <send event="DISPLAY.UPDATE" />
     </transition>
     <transition event="DISPLAY.UPDATE">
-        <log level="0" label="'result'" expr=".short_expr==''?res:short_expr" />
+        <log label="'result'" expr=".short_expr==''?res:short_expr" />
     </transition>
     <transition event="OP.INSERT">
-        <log level="0" expr="_event.data[0]" />
+        <log expr="_event.data[0]" />
         <if cond="_event.data[0] == 'OPER.PLUS'">
             <assign location="long_expr" expr="long_expr+'+'" />
         <elseif cond="_event.data[0]=='OPER.MINUS'" />

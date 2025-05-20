@@ -161,7 +161,6 @@ function parseOnX(el?: Element): OnEntry | OnExit | undefined {
 
 function parseTransition(el: Element): Transition {
   return new Transition({
-    id: attr(el, "id") ?? "",
     event: attr(el, "event") ?? undefined,
     cond: attr(el, "cond") ?? undefined,
     target: attr(el, "target")?.split(/\s+/) as (TransitionTarget | TransitionTarget[]),

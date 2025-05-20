@@ -187,7 +187,6 @@ function parseInvoke(el: Element): Invoke {
   let finalize: Finalize | undefined = undefined;
   if (finalizeEl) {
     finalize = new Finalize({
-      id: attr(finalizeEl, "id") ?? "",
       execution: Array.from(finalizeEl.childNodes)
         .filter(n => n.nodeType === n.ELEMENT_NODE)
         .map(n => parseExecutable(n as Element))
@@ -195,7 +194,6 @@ function parseInvoke(el: Element): Invoke {
   }
 
   return new Invoke({
-    id: attr(el, "id") ?? "",
     type: attr(el, "type") ?? undefined,
     typeexpr: attr(el, "typeexpr") ?? undefined,
     src: attr(el, "src") ?? undefined,

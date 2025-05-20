@@ -448,7 +448,7 @@ export class Transition {
 /* --------------------------------------------------------------------- */
 
 /** <invoke> — Spec §3.11 */
-export class Invoke extends SCXMLElementBase {
+export class Invoke {
   public readonly type?: string;
   public readonly typeexpr?: string;
   public readonly src?: string;
@@ -459,9 +459,9 @@ export class Invoke extends SCXMLElementBase {
   public readonly autoforward?: boolean;
   public readonly finalize?: Finalize;
   public readonly content?: string | ExecutableContent[]; // <content>
+  public readonly doc?: string;
 
   constructor(options: {
-    id: string;
     type?: string;
     typeexpr?: string;
     src?: string;
@@ -474,7 +474,6 @@ export class Invoke extends SCXMLElementBase {
     content?: string | ExecutableContent[];
     doc?: string;
   }) {
-    super(options.id, options.doc);
     this.type = options.type;
     this.typeexpr = options.typeexpr;
     this.src = options.src;
@@ -485,6 +484,7 @@ export class Invoke extends SCXMLElementBase {
     this.autoforward = options.autoforward;
     this.finalize = options.finalize;
     this.content = options.content;
+    this.doc = options.doc;
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
@@ -493,12 +493,16 @@ export class Invoke extends SCXMLElementBase {
 }
 
 /** <finalize> — Spec §3.12 */
-export class Finalize extends SCXMLElementBase {
+export class Finalize {
   public readonly execution: ExecutableContent[];
+  public readonly doc?: string;
 
-  constructor(options: { id: string; execution?: ExecutableContent[]; doc?: string }) {
-    super(options.id, options.doc);
+  constructor(options: {
+    execution?: ExecutableContent[]; 
+    doc?: string
+  }) {
     this.execution = options.execution ?? [];
+    this.doc = options.doc;
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
@@ -756,7 +760,6 @@ export function toSCXML(doc: SCXML, opt: SerialiserOptions = {}): string {
 
   const emitInvoke = (inv: Invoke): string => {
     const p = {
-      id: inv.id,
       type: inv.type,
       typeexpr: inv.typeexpr,
       src: inv.src,
@@ -771,7 +774,7 @@ export function toSCXML(doc: SCXML, opt: SerialiserOptions = {}): string {
       s += self("param", { name: k, expr: v });
     }
     if (inv.finalize) {
-      s += open("finalize", { id: inv.finalize.id });
+      s += open("finalize", { });
       ctx.depth++;
       inv.finalize.execution.forEach((x) => (s += emitExecutable(x)));
       ctx.depth--;

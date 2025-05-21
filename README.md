@@ -1,4 +1,3 @@
-
 # SCXML-TS
 
 [![npm version](https://badge.fury.io/js/scxml-ts.svg)](https://www.npmjs.com/package/scxml-ts)
@@ -15,6 +14,16 @@ A TypeScript implementation of the [W3C SCXML 1.0](https://www.w3.org/TR/scxml/)
 - Parser to convert SCXML XML to TypeScript objects
 - Serializer to convert TypeScript objects back to valid SCXML XML
 - Comprehensive test suite with sample SCXML documents
+- **Cross-platform compatibility**: Works in both Node.js and browser environments
+
+## Browser Compatibility
+
+SCXML-TS is fully compatible with browser environments, including React applications. The library:
+
+- Uses ES modules for browser compatibility
+- Automatically detects the environment and uses the appropriate XML parser
+- Uses native browser DOM APIs when running in a browser
+- Falls back to `@xmldom/xmldom` when running in Node.js
 
 ## Installation
 

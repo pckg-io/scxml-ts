@@ -14,7 +14,7 @@
  *   npm i @xmldom/xmldom
  */
 
-import { DOMParser } from "@xmldom/xmldom";
+import { createDOMParser } from "./xml-parser";
 import {
   SCXML, State, Parallel, Final, History, Transition, TransitionTarget, /* Datamodel, Data, */
   OnEntry, OnExit, Invoke, Finalize,
@@ -251,7 +251,8 @@ function parseStateLike(el: Element): State | Parallel | Final {
 /* --------------------------------------------------------------------- */
 
 export function parseSCXML(xml: string): SCXML {
-  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  const parser = createDOMParser();
+  const doc = parser.parseFromString(xml, "application/xml");
   const root = doc.documentElement;
   if (root.tagName !== "scxml") {
     throw new Error("Not an <scxml> document");

@@ -3,6 +3,8 @@
 
 [![npm version](https://badge.fury.io/js/scxml-ts.svg)](https://www.npmjs.com/package/scxml-ts)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/pckg-io/scxml-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/pckg-io/scxml-ts/actions/workflows/ci.yml)
+[![npm downloads](https://img.shields.io/npm/dm/scxml-ts.svg)](https://www.npmjs.com/package/scxml-ts)
 
 A TypeScript implementation of the [W3C SCXML 1.0](https://www.w3.org/TR/scxml/) data model, parser, serializer, and utilities.
 

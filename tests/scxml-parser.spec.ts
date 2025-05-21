@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { parseSCXML } from '../src/scxml-parser';
-import { SCXML, toSCXML, State, Parallel, Final } from '../src/scxml-model';
+import { SCXML, toSCXML, State } from '../src/scxml-model';
 import { validateXML } from './custom-xml-validator';
 
 describe('SCXML parser', () => {

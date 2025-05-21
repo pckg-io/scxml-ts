@@ -2,6 +2,18 @@
   "name": "scxml-ts",
   "version": "0.1.0",
   "description": "TypeScript implementation of the W3C SCXML 1.0 data model, parser, serializer, and utilities.",
+  "author": "Sam Chapman",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pckg-io/scxml-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pckg-io/scxml-ts/issues"
+  },
+  "homepage": "https://github.com/pckg-io/scxml-ts#readme",
+  "files": [
+    "dist"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

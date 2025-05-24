@@ -260,7 +260,6 @@ export function parseSCXML(xml: string): SCXML {
 
   const scxml = new SCXML({
     version: attr(root, "version") ?? "1.0",
-    profile: attr(root, "profile") ?? undefined,
     initial: attr(root, "initial") as TransitionTarget,
     bindings: (attr(root, "bindings") as "early" | "late") ?? undefined,
     children: Array.from(root.childNodes)

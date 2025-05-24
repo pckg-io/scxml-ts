@@ -42,7 +42,7 @@
 /* ********************************************************************** */
 
 /** Valid SCXML version identifiers (Spec §3.4.1 _scxml_). */
-export type Version = "1.0" | "1.0.1" | string; // forward‑compatibility
+export type Version = "1.0" | string; // forward‑compatibility
 
 /** Namespaces that may appear in the root <scxml> element (Spec §D). */
 export interface Namespaces {
@@ -254,7 +254,6 @@ export interface SCXMLStructureVisitor<R = void> {
 /** <scxml> — the document root (Spec §3.4). */
 export class SCXML {
   public readonly version: Version;
-  public readonly profile?: string; // e.g. minimum profile
   public readonly initial?: TransitionTarget;
   public readonly xmlns: Namespaces;
   public readonly children: ChildState[];
@@ -265,7 +264,6 @@ export class SCXML {
 
   constructor(options: {
     version?: Version;
-    profile?: string;
     initial?: TransitionTarget;
     xmlns?: Namespaces;
     children?: ChildState[];
@@ -275,7 +273,6 @@ export class SCXML {
     doc?: string;
   }) {
     this.version = options.version ?? "1.0";
-    this.profile = options.profile;
     this.initial = options.initial;
     this.xmlns = options.xmlns ?? { scxml: "http://www.w3.org/2005/07/scxml" };
     this.children = options.children ?? [];
@@ -286,6 +283,11 @@ export class SCXML {
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
+    this.children.forEach((child) => {
+      if (child instanceof SCXMLElementBase) {
+        child.accept(v);
+      }
+    });
     return v.scxml(this);
   }
 }
@@ -346,6 +348,11 @@ export class State extends CompoundStateBase {
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
+    this.children.forEach((child) => {
+      if (child instanceof SCXMLElementBase) {
+        child.accept(v);
+      }
+    });
     return v.state(this);
   }
 }
@@ -366,6 +373,11 @@ export class Parallel extends CompoundStateBase {
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
+    this.children.forEach((child) => {
+      if (child instanceof SCXMLElementBase) {
+        child.accept(v);
+      }
+    });
     return v.parallel(this);
   }
 }
@@ -863,7 +875,6 @@ export function toSCXML(doc: SCXML, opt: SerialiserOptions = {}): string {
   xml += open("scxml", {
     xmlns: "http://www.w3.org/2005/07/scxml",
     version: doc.version || "1.0",
-    profile: doc.profile,
     initial: doc.initial,
     bindings: doc.bindings,
     ...Object.fromEntries(

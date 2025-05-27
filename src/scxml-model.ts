@@ -37,6 +37,8 @@
  *
  * ──────────────────────────────────────────────────────────────────────────────*/
 
+import { randomUUID } from 'crypto';
+
 /* ********************************************************************** */
 /* §1  UTILITY TYPES & ENUMS                                              */
 /* ********************************************************************** */
@@ -482,7 +484,7 @@ export class Transition {
     execution?: ExecutableContent[];
     doc?: string;
   }) {
-    this.id = options.id ?? self.crypto.randomUUID();
+    this.id = options.id ?? randomUUID();
     this.event = options.event;
     this.cond = options.cond;
     this.target = options.target;

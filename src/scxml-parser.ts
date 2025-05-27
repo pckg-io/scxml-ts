@@ -175,7 +175,9 @@ function parseHistory(el: Element): History {
   return new History({
     id: attr(el, "id") ?? "",
     type: (attr(el, "type") as "shallow" | "deep") ?? "shallow",
-    transitions: Array.from(el.getElementsByTagName("transition")).map(parseTransition)
+    transitions: Array.from(el.childNodes)
+    .filter(n => n.nodeType === n.ELEMENT_NODE && (n as Element).tagName === "transition")
+    .map(n => parseTransition(n as Element))
   });
 }
 
@@ -215,7 +217,9 @@ function parseStateLike(el: Element): State | Parallel | Final {
         initial: attr(el, "initial") as TransitionTarget,
         onentry: parseOnX(el.getElementsByTagName("onentry").item(0) ?? undefined),
         onexit: parseOnX(el.getElementsByTagName("onexit").item(0) ?? undefined),
-        transitions: Array.from(el.getElementsByTagName("transition")).map(parseTransition),
+        transitions: Array.from(el.childNodes)
+          .filter(n => n.nodeType === n.ELEMENT_NODE && (n as Element).tagName === "transition")
+          .map(n => parseTransition(n as Element)),
         children: Array.from(el.childNodes)
           .filter(n => n.nodeType === n.ELEMENT_NODE && (n as Element).tagName.match(/^(state|parallel|final)$/))
           .map(n => parseStateLike(n as Element)),
@@ -230,7 +234,9 @@ function parseStateLike(el: Element): State | Parallel | Final {
         id: attr(el, "id") ?? "",
         onentry: parseOnX(el.getElementsByTagName("onentry").item(0) ?? undefined),
         onexit: parseOnX(el.getElementsByTagName("onexit").item(0) ?? undefined),
-        transitions: Array.from(el.getElementsByTagName("transition")).map(parseTransition),
+        transitions: Array.from(el.childNodes)
+          .filter(n => n.nodeType === n.ELEMENT_NODE && (n as Element).tagName === "transition")
+          .map(n => parseTransition(n as Element)),
         children: Array.from(el.childNodes)
           .filter(n => n.nodeType === n.ELEMENT_NODE && (n as Element).tagName.match(/^(state|parallel|final)$/))
           .map(n => parseStateLike(n as Element)),
@@ -254,14 +260,24 @@ export function parseSCXML(xml: string): SCXML {
   const parser = createDOMParser();
   const doc = parser.parseFromString(xml, "application/xml");
   const root = doc.documentElement;
+  
   if (root.tagName !== "scxml") {
     throw new Error("Not an <scxml> document");
   }
 
   const scxml = new SCXML({
+    name: attr(root, "name"),
     version: attr(root, "version") ?? "1.0",
     initial: attr(root, "initial") as TransitionTarget,
     bindings: (attr(root, "bindings") as "early" | "late") ?? undefined,
+    xmlns: {
+      scxml: attr(root, "xmlns") || "http://www.w3.org/2005/07/scxml",
+      ...Object.fromEntries(
+        Array.from(root.attributes)
+          .filter(attr => attr.name.startsWith("xmlns:"))
+          .map(attr => [attr.name.substring(6), attr.value]) // Remove "xmlns:" prefix
+      )
+    },
     children: Array.from(root.childNodes)
       .filter(n => n.nodeType === n.ELEMENT_NODE && (n as Element).tagName.match(/^(state|parallel|final)$/))
       .map(n => parseStateLike(n as Element)),

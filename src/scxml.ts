@@ -1,7 +1,6 @@
 import {
   SCXML, State, Parallel, Final, History, Transition, Data, Datamodel, EventName,
-  OnEntry, OnExit, Invoke, Finalize, SCXMLStructureVisitor, Namespaces,
-  TransitionTarget
+  OnEntry, OnExit, Invoke, Finalize, SCXMLStructureVisitor, Namespaces
 } from "./scxml-model";
 
 export type identifier = string;
@@ -495,11 +494,11 @@ export class ScxmlTransition implements HasIdentifier, HasTransitionType, HasEve
 export class SCXMLVisitor implements SCXMLStructureVisitor<void> {
 
   public document?: ScxmlDoc = undefined;
-  private states: ScxmlState[] = [] as ScxmlState[];
-  private parallels: ScxmlParallel[] = [] as ScxmlParallel[];
-  private finals: ScxmlFinal[] = [] as ScxmlFinal[];
-  private historys: ScxmlHistory[] = [] as ScxmlHistory[];
-  private transitions: ScxmlTransition[] = [] as ScxmlTransition[];
+  private stateMap = new Map<string, ScxmlState>();
+  private parallelMap = new Map<string, ScxmlParallel>();
+  private finalMap = new Map<string, ScxmlFinal>();
+  private historyMap = new Map<string, ScxmlHistory>();
+  private transitionMap = new Map<string, ScxmlTransition>();
 
   constructor(scxml: SCXML) {
     scxml.accept(this);
@@ -516,36 +515,34 @@ export class SCXMLVisitor implements SCXMLStructureVisitor<void> {
       document.setName(node.name);
     }
 
-    Object.entries(node.xmlns)
-      .filter(([k]) => k !== "scxml")
-      .map(([k, v]) => ["xmlns:" + k, v])
-      .forEach(([k,v]) => {
-        if(k !== undefined && v !== undefined) {
-          document.setNamespace(k, v);
-        }
-      });
+    Object.entries(node.xmlns).forEach(([key, value]) => {
+      if (key === "scxml") {
+        // Default SCXML namespace is already set
+      } else if (value) {
+        document.setNamespace(key, value);
+      }
+    });
     
     node.children.forEach(child => {
       if (child instanceof State) {
-        const state = this.states.find(x => x.id === child.id);
-        if (state !== undefined) {
+        const state = this.stateMap.get(child.id);
+        if (state) {
           document.addState(state);
         }
-      }
-      else if (child instanceof Parallel) {
-        const parallel = this.parallels.find(x => x.id === child.id);
-        if(parallel !== undefined) {
+      } else if (child instanceof Parallel) {
+        const parallel = this.parallelMap.get(child.id);
+        if (parallel) {
           document.addParallel(parallel);
         }
-      }
-      else if (child instanceof Final) {
-        const final = this.finals.find(x => x.id === child.id);
-        if(final !== undefined) {
+      } else if (child instanceof Final) {
+        const final = this.finalMap.get(child.id);
+        if (final) {
           document.addFinal(final);
         }
       }
     });
 
+    this.document = document;
   }
   state(node: State): void {
     const state = new ScxmlState({ id: node.id });
@@ -554,81 +551,77 @@ export class SCXMLVisitor implements SCXMLStructureVisitor<void> {
       state.setInitial(node.initial);
     }
 
+    node.transitions.forEach(transitionNode => {
+      const transition = this.transitionMap.get(transitionNode.id);
+      if (transition) {
+        state.addTransition(transition);
+      }
+    });
+
     node.children.forEach(child => {
       if (child instanceof State) {
-        const subState = this.states.find(x => x.id === child.id);
-        if (subState !== undefined) {
+        const subState = this.stateMap.get(child.id);
+        if (subState) {
           state.addState(subState);
         }
-      }
-      else if (child instanceof Parallel) {
-        const subParallel = this.parallels.find(x => x.id === child.id);
-        if(subParallel !== undefined) {
+      } else if (child instanceof Parallel) {
+        const subParallel = this.parallelMap.get(child.id);
+        if (subParallel) {
           state.addParallel(subParallel);
         }
-      }
-      else if (child instanceof Final) {
-        const subFinal = this.finals.find(x => x.id === child.id);
-        if(subFinal !== undefined) {
+      } else if (child instanceof Final) {
+        const subFinal = this.finalMap.get(child.id);
+        if (subFinal) {
           state.addFinal(subFinal);
         }
       }
     });
 
-    node.histories.forEach(child => {
-      const history = this.historys.find(x => x.id === child.id);
-      if(history !== undefined) {
+    node.histories.forEach(historyNode => {
+      const history = this.historyMap.get(historyNode.id);
+      if (history) {
         state.addHistory(history);
       }
     });
 
-    node.transitions.forEach(child => {
-      const transition = this.transitions.find(x => x.id === child.id);
-      if(transition !== undefined) {
-        state.addTransition(transition);
-      }
-    });
-
-    this.states.push(state);
+    this.stateMap.set(node.id, state);
   }
   parallel(node: Parallel): void {
     const parallel = new ScxmlParallel({ id: node.id });
 
+    node.transitions.forEach(child => {
+      const transition = this.transitionMap.get(child.id);
+      if (transition) {
+        parallel.addTransition(transition);
+      }
+    });
+
     node.children.forEach(child => {
       if (child instanceof State) {
-        const subState = this.states.find(x => x.id === child.id);
-        if (subState !== undefined) {
+        const subState = this.stateMap.get(child.id);
+        if (subState) {
           parallel.addState(subState);
         }
-      }
-      else if (child instanceof Parallel) {
-        const subParallel = this.parallels.find(x => x.id === child.id);
-        if(subParallel !== undefined) {
+      } else if (child instanceof Parallel) {
+        const subParallel = this.parallelMap.get(child.id);
+        if (subParallel) {
           parallel.addParallel(subParallel);
         }
       }
     });
 
     node.histories.forEach(child => {
-      const history = this.historys.find(x => x.id === child.id);
-      if(history !== undefined) {
+      const history = this.historyMap.get(child.id);
+      if (history) {
         parallel.addHistory(history);
       }
     });
 
-    node.transitions.forEach(child => {
-      const transition = this.transitions.find(x => x.id === child.id);
-      if(transition !== undefined) {
-        parallel.addTransition(transition);
-      }
-    });
-      
-    this.parallels.push(parallel);
+    this.parallelMap.set(node.id, parallel);
   }
   final(node: Final): void {
     const final = new ScxmlFinal({ id: node.id });
-
-    this.finals.push(final);
+    this.finalMap.set(node.id, final);
   }
   history(node: History): void {
     const history = new ScxmlHistory({ id: node.id });
@@ -638,13 +631,13 @@ export class SCXMLVisitor implements SCXMLStructureVisitor<void> {
     }
     
     node.transitions.forEach(child => {
-      const transition = this.transitions.find(x => x.id === child.id);
-      if(transition !== undefined) {
+      const transition = this.transitionMap.get(child.id);
+      if (transition) {
         history.addTransition(transition);
       }
     });
 
-    this.historys.push(history);
+    this.historyMap.set(node.id, history);
   }
   transition(node: Transition): void {
     const transition = new ScxmlTransition({ id: node.id });
@@ -662,12 +655,12 @@ export class SCXMLVisitor implements SCXMLStructureVisitor<void> {
       transition.setTransitionType(node.type);
     }
 
-    this.transitions.push(transition);
+    this.transitionMap.set(node.id, transition);
   }
-  invoke(node: Invoke): void {}
-  datamodel(node: Datamodel): void {}
-  data(node: Data): void {}
-  onentry(node: OnEntry): void {}
-  onexit(node: OnExit): void {}
-  finalize(node: Finalize): void {}
+  invoke(_node: Invoke): void {}
+  datamodel(_node: Datamodel): void {}
+  data(_node: Data): void {}
+  onentry(_node: OnEntry): void {}
+  onexit(_node: OnExit): void {}
+  finalize(_node: Finalize): void {}
 }

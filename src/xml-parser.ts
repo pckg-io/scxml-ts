@@ -29,7 +29,35 @@ export class EnvAwareDOMParser {
       try {
         // Dynamic import in Node.js environment
         const { DOMParser } = require('@xmldom/xmldom');
-        return new DOMParser().parseFromString(xmlText, mimeType);
+        
+        // Create parser with error handlers to be more lenient with namespace issues
+        const parser = new DOMParser({
+          errorHandler: {
+            warning: function(msg: string) {
+              // Suppress warnings for now, especially namespace-related ones
+              if (!msg.includes('invalid attribute:xmlns:xmlns:')) {
+                console.warn('[xmldom warning]', msg);
+              }
+            },
+            error: function(msg: string) {
+              // Convert namespace duplication errors to warnings
+              if (msg.includes('invalid attribute:xmlns:xmlns:')) {
+                console.warn('[xmldom namespace warning]', msg);
+                return; // Don't throw for this specific error
+              }
+              console.error('[xmldom error]', msg);
+            },
+            fatalError: function(msg: string) {
+              // Only throw for truly fatal errors, not namespace issues
+              if (!msg.includes('invalid attribute:xmlns:xmlns:')) {
+                console.error('[xmldom fatal error]', msg);
+                throw new Error(msg);
+              }
+            }
+          }
+        });
+        
+        return parser.parseFromString(xmlText, mimeType);
       } catch (e) {
         console.error('Failed to load @xmldom/xmldom:', e instanceof Error ? e.message : String(e));
         throw new Error('XML DOM parser not available in this environment');

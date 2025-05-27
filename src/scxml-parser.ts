@@ -163,7 +163,7 @@ function parseTransition(el: Element): Transition {
   return new Transition({
     event: attr(el, "event") ?? undefined,
     cond: attr(el, "cond") ?? undefined,
-    target: attr(el, "target")?.split(/\s+/) as (TransitionTarget | TransitionTarget[]),
+    target: attr(el, "target") as TransitionTarget | undefined,
     type: (attr(el, "type") as "internal" | "external") ?? undefined,
     execution: Array.from(el.childNodes)
       .filter(n => n.nodeType === n.ELEMENT_NODE)

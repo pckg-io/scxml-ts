@@ -93,6 +93,7 @@ export interface ExecutableContentBase {
 
   /** Visitor pattern (double‑dispatch) hook. */
   readonly accept: <R>(v: ExecutableContentVisitor<R>) => R;
+  
 }
 
 /** Union type enumerating every executable‑content variant. */
@@ -253,6 +254,7 @@ export interface SCXMLStructureVisitor<R = void> {
 
 /** <scxml> — the document root (Spec §3.4). */
 export class SCXML {
+  public readonly name?: string;
   public readonly version: Version;
   public readonly initial?: TransitionTarget;
   public readonly xmlns: Namespaces;
@@ -263,6 +265,7 @@ export class SCXML {
   public readonly doc?: string;
 
   constructor(options: {
+    name?: string;
     version?: Version;
     initial?: TransitionTarget;
     xmlns?: Namespaces;
@@ -272,6 +275,7 @@ export class SCXML {
     script?: Script;
     doc?: string;
   }) {
+    this.name = options.name;
     this.version = options.version ?? "1.0";
     this.initial = options.initial;
     this.xmlns = options.xmlns ?? { scxml: "http://www.w3.org/2005/07/scxml" };
@@ -288,40 +292,35 @@ export class SCXML {
         child.accept(v);
       }
     });
+    this.datamodel?.accept(v);
     return v.scxml(this);
   }
 }
 
 /** Abstract superclass for compound states (Spec §3.5). */
 export abstract class CompoundStateBase extends SCXMLElementBase {
-  public readonly initial?: TransitionTarget;
   public readonly onentry?: OnEntry;
   public readonly onexit?: OnExit;
   public readonly transitions: Transition[];
   public readonly children: ChildState[];
-  public readonly datamodel?: Datamodel;
   public readonly invokes: Invoke[];
   public readonly histories: History[];
 
   protected constructor(options: {
     id: string;
-    initial?: TransitionTarget;
     onentry?: OnEntry;
     onexit?: OnExit;
     transitions?: Transition[];
     children?: ChildState[];
-    datamodel?: Datamodel;
     invokes?: Invoke[];
     histories?: History[];
     doc?: string;
   }) {
     super(options.id, options.doc);
-    this.initial = options.initial;
     this.onentry = options.onentry;
     this.onexit = options.onexit;
     this.transitions = options.transitions ?? [];
     this.children = options.children ?? [];
-    this.datamodel = options.datamodel;
     this.invokes = options.invokes ?? [];
     this.histories = options.histories ?? [];
   }
@@ -330,6 +329,8 @@ export abstract class CompoundStateBase extends SCXMLElementBase {
 /** <state> (simple/compound/history‑container) — Spec §3.5 */
 export class State extends CompoundStateBase {
   public readonly type: "simple" | "compound";
+  public readonly initial?: TransitionTarget;
+  public readonly datamodel?: Datamodel;
 
   constructor(options: {
     id: string;
@@ -344,14 +345,28 @@ export class State extends CompoundStateBase {
     doc?: string;
   }) {
     super(options);
+    this.initial = options.initial;
+    this.datamodel = options.datamodel;
     this.type = options.children && options.children.length > 0 ? "compound" : "simple";
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
+    this.onentry?.accept(v);
+    this.onexit?.accept(v);
+    this.transitions.forEach((transition) => {
+      transition.accept(v);
+    });
     this.children.forEach((child) => {
       if (child instanceof SCXMLElementBase) {
         child.accept(v);
       }
+    });
+    this.datamodel?.accept(v);
+    this.invokes.forEach((invoke) => {
+      invoke.accept(v);
+    });
+    this.histories.forEach((history) => {
+      history.accept(v);
     });
     return v.state(this);
   }
@@ -369,14 +384,25 @@ export class Parallel extends CompoundStateBase {
     histories?: History[];
     doc?: string;
   }) {
-    super({ ...options, initial: undefined }); // no initial attribute in <parallel>
+    super(options);
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
+    this.onentry?.accept(v);
+    this.onexit?.accept(v);
+    this.transitions.forEach((transition) => {
+      transition.accept(v);
+    });
     this.children.forEach((child) => {
       if (child instanceof SCXMLElementBase) {
         child.accept(v);
       }
+    });
+    this.invokes.forEach((invoke) => {
+      invoke.accept(v);
+    });
+    this.histories.forEach((history) => {
+      history.accept(v);
     });
     return v.parallel(this);
   }
@@ -387,13 +413,20 @@ export class Final extends SCXMLElementBase {
   public readonly onentry?: OnEntry;
   public readonly onexit?: OnExit;
 
-  constructor(options: { id: string; onentry?: OnEntry; onexit?: OnExit; doc?: string }) {
+  constructor(options: {
+    id: string;
+    onentry?: OnEntry;
+    onexit?: OnExit;
+    doc?: string
+  }) {
     super(options.id, options.doc);
     this.onentry = options.onentry;
     this.onexit = options.onexit;
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
+    this.onentry?.accept(v);
+    this.onexit?.accept(v);
     return v.final(this);
   }
 }
@@ -421,27 +454,35 @@ export class History extends SCXMLElementBase {
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
+    this.onentry?.accept(v);
+    this.onexit?.accept(v);
+    this.transitions.forEach((transition) => {
+      transition.accept(v);
+    });
     return v.history(this);
   }
 }
 
 /** <transition> — Spec §3.8 */
 export class Transition {
+  public readonly id: string;
   public readonly event?: EventName | EventName[]; // list space‑separated OK
   public readonly cond?: XPathExpr;
-  public readonly target?: TransitionTarget | TransitionTarget[];
+  public readonly target?: TransitionTarget;
   public readonly type?: "internal" | "external"; // external default
   public readonly execution: ExecutableContent[];
   public readonly doc?: string;
 
   constructor(options: {
+    id?: string;
     event?: EventName | EventName[];
     cond?: XPathExpr;
-    target?: TransitionTarget | TransitionTarget[];
+    target?: TransitionTarget;
     type?: "internal" | "external";
     execution?: ExecutableContent[];
     doc?: string;
   }) {
+    this.id = options.id ?? self.crypto.randomUUID();
     this.event = options.event;
     this.cond = options.cond;
     this.target = options.target;
@@ -526,12 +567,19 @@ export class Finalize {
 export class Datamodel extends SCXMLElementBase {
   public readonly data: Data[];
 
-  constructor(options: { id: string; data?: Data[]; doc?: string }) {
+  constructor(options: {
+    id: string;
+    data?: Data[];
+    doc?: string
+  }) {
     super(options.id, options.doc);
     this.data = options.data ?? [];
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
+    this.data.forEach((data) => {
+      data.accept(v);
+    });
     return v.datamodel(this);
   }
 }
@@ -542,7 +590,13 @@ export class Data extends SCXMLElementBase {
   public readonly expr?: XPathExpr;
   public readonly location?: XPathExpr; // for <assign>
 
-  constructor(options: { id: string; src?: string; expr?: XPathExpr; location?: XPathExpr; doc?: string }) {
+  constructor(options: {
+    id: string;
+    src?: string;
+    expr?: XPathExpr;
+    location?: XPathExpr;
+    doc?: string
+  }) {
     super(options.id, options.doc);
     this.src = options.src;
     this.expr = options.expr;
@@ -559,7 +613,11 @@ export class OnEntry {
   public readonly execution: ExecutableContent[];
   public readonly doc?: string;
 
-  constructor(options: { id: string; execution?: ExecutableContent[]; doc?: string }) {
+  constructor(options: {
+    id: string;
+    execution?: ExecutableContent[];
+    doc?: string
+  }) {
     this.execution = options.execution ?? [];
     this.doc = options.doc;
   }
@@ -574,7 +632,11 @@ export class OnExit {
   public readonly execution: ExecutableContent[];
   public readonly doc?: string;
 
-  constructor(options: { id: string; execution?: ExecutableContent[]; doc?: string }) {
+  constructor(options: {
+    id: string;
+    execution?: ExecutableContent[];
+    doc?: string
+  }) {
     this.execution = options.execution ?? [];
     this.doc = options.doc;
   }

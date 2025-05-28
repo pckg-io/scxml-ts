@@ -290,11 +290,21 @@ export class SCXML {
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
     this.children.forEach((child) => {
-      if (child instanceof SCXMLElementBase) {
+      if (child instanceof State) {
+        child.accept(v);
+      }
+      else if (child instanceof Parallel) {
+        child.accept(v);
+      }
+      else if (child instanceof Final) {
         child.accept(v);
       }
     });
-    this.datamodel?.accept(v);
+
+    if(this.datamodel) {
+      this.datamodel.accept(v);
+    }
+    
     return v.scxml(this);
   }
 }
@@ -353,17 +363,29 @@ export class State extends CompoundStateBase {
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
-    this.onentry?.accept(v);
-    this.onexit?.accept(v);
+    if(this.onentry) {
+      this.onentry.accept(v);
+    }
+    if(this.onexit) {
+      this.onexit.accept(v);
+    }
     this.transitions.forEach((transition) => {
       transition.accept(v);
     });
     this.children.forEach((child) => {
-      if (child instanceof SCXMLElementBase) {
+      if (child instanceof State) {
+        child.accept(v);
+      }
+      else if (child instanceof Parallel) {
+        child.accept(v);
+      }
+      else if (child instanceof Final) {
         child.accept(v);
       }
     });
-    this.datamodel?.accept(v);
+    if(this.datamodel) {
+      this.datamodel.accept(v);
+    }
     this.invokes.forEach((invoke) => {
       invoke.accept(v);
     });
@@ -390,13 +412,23 @@ export class Parallel extends CompoundStateBase {
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
-    this.onentry?.accept(v);
-    this.onexit?.accept(v);
+    if(this.onentry) {
+      this.onentry.accept(v);
+    }
+    if(this.onexit) {
+      this.onexit.accept(v);
+    }
     this.transitions.forEach((transition) => {
       transition.accept(v);
     });
     this.children.forEach((child) => {
-      if (child instanceof SCXMLElementBase) {
+      if (child instanceof State) {
+        child.accept(v);
+      }
+      else if (child instanceof Parallel) {
+        child.accept(v);
+      }
+      else if (child instanceof Final) {
         child.accept(v);
       }
     });
@@ -427,8 +459,12 @@ export class Final extends SCXMLElementBase {
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
-    this.onentry?.accept(v);
-    this.onexit?.accept(v);
+    if(this.onentry) {
+      this.onentry.accept(v);
+    }
+    if(this.onexit) {
+      this.onexit.accept(v);
+    }
     return v.final(this);
   }
 }
@@ -456,8 +492,12 @@ export class History extends SCXMLElementBase {
   }
 
   public accept<R>(v: SCXMLStructureVisitor<R>): R {
-    this.onentry?.accept(v);
-    this.onexit?.accept(v);
+    if(this.onentry) {
+      this.onentry.accept(v);
+    }
+    if(this.onexit) {
+      this.onexit.accept(v);
+    }
     this.transitions.forEach((transition) => {
       transition.accept(v);
     });

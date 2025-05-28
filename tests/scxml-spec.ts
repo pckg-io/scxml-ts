@@ -21,9 +21,11 @@ describe('SCXML Types and Visitor Tests', () => {
     it('should allow setting and getting properties', () => {
       const doc = new ScxmlDoc();
       
+      doc.setInitial('startState');
       doc.setName('TestStateMachine');
       doc.setNamespace('custom', 'http://example.com/custom');
       
+      expect(doc.initial).toBe('startState');
       expect(doc.name).toBe('TestStateMachine');
       expect(doc.xmlns.custom).toBe('http://example.com/custom');
     });
@@ -96,13 +98,9 @@ describe('SCXML Types and Visitor Tests', () => {
 
     it('should allow setting initial state', () => {
       const state = new ScxmlState({ id: 'testState' });
-      const substate = new ScxmlState({ id: 'childState' });
-      
-      state.addState(substate);
       state.setInitial('childState');
       
-      expect(state.initial!.id).toBe('childState');
-      expect(state.initial).toBe(substate);
+      expect(state.initial).toBe('childState');
     });
 
     it('should support nested states', () => {
@@ -240,7 +238,7 @@ describe('SCXML Types and Visitor Tests', () => {
       
       expect(doc).toBeInstanceOf(ScxmlDoc);
       expect(doc!.version).toBe('1.0');
-      expect(doc!.initial!.id).toBe('s');
+      expect(doc!.initial).toBe('s');
       expect(doc!.states).toHaveLength(1);
       expect(doc!.states[0].id).toBe('s');
     });
@@ -256,7 +254,7 @@ describe('SCXML Types and Visitor Tests', () => {
       const doc = visitor.document;
       
       expect(doc).toBeInstanceOf(ScxmlDoc);
-      expect(doc!.initial!.id).toBe('start');
+      expect(doc!.initial).toBe('start');
       expect(doc!.states).toHaveLength(2);
       expect(doc!.finals).toHaveLength(1);
       
@@ -321,7 +319,7 @@ describe('SCXML Types and Visitor Tests', () => {
       const doc = visitor.document;
       
       expect(doc!.name).toBe('ComplexMachine');
-      expect(doc!.initial!.id).toBe('main');
+      expect(doc!.initial).toBe('main');
       
       // Should have main state and parallel section
       expect(doc!.states).toHaveLength(1);
@@ -330,7 +328,7 @@ describe('SCXML Types and Visitor Tests', () => {
       
       const mainState = doc!.states[0];
       expect(mainState.id).toBe('main');
-      expect(mainState.initial!.id).toBe('sub1');
+      expect(mainState.initial).toBe('sub1');
       expect(mainState.states).toHaveLength(2); // sub1, sub2
       expect(mainState.histories).toHaveLength(1);
       
@@ -369,8 +367,8 @@ describe('SCXML Types and Visitor Tests', () => {
       
       // Validate that initial state exists
       if (doc!.initial) {
-        const initialExists = doc!.states.some(s => s.id === doc!.initial!.id) ||
-                            doc!.parallels.some(p => p.id === doc!.initial!.id);
+        const initialExists = doc!.states.some(s => s.id === doc!.initial) ||
+                            doc!.parallels.some(p => p.id === doc!.initial);
         expect(initialExists).toBe(true);
       }
     });
@@ -388,7 +386,7 @@ describe('SCXML Types and Visitor Tests', () => {
       const doc = visitor.document;
       
       expect(doc!.xmlns.scxml).toBe('http://www.w3.org/2005/07/scxml');
-      expect(doc!.xmlns['custom']).toBe('http://example.com/custom');
+      expect(doc!.xmlns['xmlns:custom']).toBe('http://example.com/custom');
     });
   });
 

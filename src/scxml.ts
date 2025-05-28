@@ -42,7 +42,7 @@ export interface HasNamespaces {
 }
 
 export interface HasInitial {
-  initial?: identifier;
+  initial?: ScxmlState | ScxmlParallel | ScxmlFinal | ScxmlHistory;
   setInitial(initial: identifier): void;
 }
 
@@ -77,13 +77,26 @@ export interface HasTarget {
   setTransitionTarget(target: identifier): void;
 }
 
+export interface Scxml<R = void> {
+  scxml(node: ScxmlDoc): R;
+  state(node: ScxmlState): R;
+  parallel(node: ScxmlParallel): R;
+  final(node: ScxmlFinal): R;
+  history(node: ScxmlHistory): R;
+  transition(node: ScxmlTransition): R;
+}
+
+abstract class ScxmlBase {
+  public abstract accept<R>(v: Scxml<R>): R;
+}
+
 // The top-level wrapper element, which carries version information. The actual state machine consists of its children. Note 
 // that only one of the children is active at any one time. See 3.11 Legal State Configurations and Specifications for details.
-export class ScxmlDoc implements HasInitial, HasName, HasNamespaces, HasStates, HasParallels, HasFinals
+export class ScxmlDoc extends ScxmlBase implements HasInitial, HasName, HasNamespaces, HasStates, HasParallels, HasFinals
 {
   // initial    false	none	IDREFS	none	A legal state specification. See 3.11 Legal State Configurations and Specifications for details.	
   //    The id of the initial state(s) for the document. If not specified, the default initial state is the first child state in document order.
-  public initial?: identifier;
+  public initial?: ScxmlState | ScxmlParallel | ScxmlFinal;
 
   // name       false	none	NMTOKEN	none	Any valid NMTOKEN	The name of this state machine. It is for purely informational purposes.
   public name?: string;
@@ -111,7 +124,13 @@ export class ScxmlDoc implements HasInitial, HasName, HasNamespaces, HasStates, 
   // <script> Provides scripting capability. Occurs 0 or 1 times.
 
   public setInitial(initial: identifier): void {
-    this.initial = initial;
+    this.initial = this.states.find(state => state.id === initial) ||
+                   this.parallels.find(parallel => parallel.id === initial) ||
+                   this.finals.find(final => final.id === initial);
+
+    if (!this.initial) {
+      throw new Error(`Initial state with id ${initial} not found.`);
+    }
   }
 
   public setName(name: string): void {
@@ -165,10 +184,23 @@ export class ScxmlDoc implements HasInitial, HasName, HasNamespaces, HasStates, 
       throw new Error(`Final with id ${finalId} not found.`);
     }
   }
+
+  public accept<R>(v: Scxml<R>): R {
+    this.states.forEach(state => {
+      v.state(state);
+    });
+    this.parallels.forEach(parallel => {
+      v.parallel(parallel);
+    });
+    this.finals.forEach(final => {
+      v.final(final);
+    });
+    return v.scxml(this);
+  }
 }
 
 // Holds the representation of a state.
-export class ScxmlState implements HasIdentifier, HasInitial, TransitionSource, HasStates, HasParallels, HasFinals, HasHistories
+export class ScxmlState extends ScxmlBase implements HasIdentifier, HasInitial, TransitionSource, HasStates, HasParallels, HasFinals, HasHistories
 {
   // id	false	none	ID	none	A valid id as defined in [XML Schema]	The identifier for this state. See 3.14 IDs for details.
   public id: identifier;
@@ -179,7 +211,7 @@ export class ScxmlState implements HasIdentifier, HasInitial, TransitionSource, 
   // <initial> In states that have substates, an optional child which identifies the default initial state. Any transition which 
   //    takes the parent state as its target will result in the state machine also taking the transition contained inside the <initial> 
   //    element.
-  public initial?: identifier;
+  public initial?: ScxmlState | ScxmlParallel | ScxmlFinal | ScxmlHistory;
 
   // <transition> Defines an outgoing transition from this state. Occurs 0 or more times. See 3.5 <transition>
   public readonly transitions: ScxmlTransition[] = [] as ScxmlTransition[];
@@ -205,6 +237,7 @@ export class ScxmlState implements HasIdentifier, HasInitial, TransitionSource, 
   constructor(options: {
     id: string
   }) {
+    super();
     this.id = options.id;
   }
 
@@ -213,7 +246,13 @@ export class ScxmlState implements HasIdentifier, HasInitial, TransitionSource, 
   }
 
   public setInitial(initial: identifier): void {
-    this.initial = initial;
+    this.initial = this.states.find(state => state.id === initial) ||
+                   this.parallels.find(parallel => parallel.id === initial) ||
+                   this.finals.find(final => final.id === initial);
+
+    if (!this.initial) {
+      throw new Error(`Initial state with id ${initial} not found.`);
+    }
   }
 
   public addTransition(transition: ScxmlTransition): void {
@@ -280,10 +319,29 @@ export class ScxmlState implements HasIdentifier, HasInitial, TransitionSource, 
       throw new Error(`History with id ${historyId} not found.`);
     }
   }
+
+  public accept<R>(v: Scxml<R>): R {
+    this.states.forEach(child => {
+      child.accept(v);
+    });
+    this.parallels.forEach(child => {
+      child.accept(v);
+    });
+    this.finals.forEach(child => {
+      child.accept(v);
+    });
+    this.histories.forEach(child => {
+      child.accept(v);
+    });
+    this.transitions.forEach(child => {
+      child.accept(v);
+    });
+    return v.state(this);
+  }
 }
 
 // The <parallel> element encapsulates a set of child states which are simultaneously active when the parent element is active.
-export class ScxmlParallel implements HasIdentifier, TransitionSource, HasStates, HasParallels, HasHistories
+export class ScxmlParallel extends ScxmlBase implements HasIdentifier, TransitionSource, HasStates, HasParallels, HasHistories
 {
   // id	false		ID	none	A valid id as defined in [XML Schema]	The identifier for this state.
   public id: identifier;
@@ -310,6 +368,7 @@ export class ScxmlParallel implements HasIdentifier, TransitionSource, HasStates
   constructor(options: {
     id: string
   }) {
+    super();
     this.id = options.id;
   }
 
@@ -367,10 +426,26 @@ export class ScxmlParallel implements HasIdentifier, TransitionSource, HasStates
       throw new Error(`History with id ${historyId} not found.`);
     }
   }
+
+  public accept<R>(v: Scxml<R>): R {
+    this.states.forEach(state => {
+      v.state(state);
+    });
+    this.parallels.forEach(parallel => {
+      v.parallel(parallel);
+    });
+    this.histories.forEach(history => {
+      v.history(history);
+    });
+    this.transitions.forEach(transition => {
+      v.transition(transition);
+    });
+    return v.parallel(this);
+  }
 }
 
 // <final> represents a final state of an <scxml> or compound <state> element.
-export class ScxmlFinal implements HasIdentifier
+export class ScxmlFinal extends ScxmlBase implements HasIdentifier
 {
   // id	false		ID	none	A valid id as defined in [XML Schema]	The identifier for this state.
   public id: identifier;
@@ -382,17 +457,22 @@ export class ScxmlFinal implements HasIdentifier
   constructor(options: {
     id: string
   }) {
+    super();
     this.id = options.id;
   }
 
   public setIdentifier(id: identifier): void {
     this.id = id;
   }
+
+  public accept<R>(v: Scxml<R>): R {
+    return v.final(this);
+  }
 }
 
 // The <history> pseudo-state allows a state machine to remember its state configuration. A <transition> taking the <history> state 
 // as its target will return the state machine to this recorded configuration.
-export class ScxmlHistory implements HasIdentifier, TransitionSource, HasHistoryType
+export class ScxmlHistory extends ScxmlBase implements HasIdentifier, TransitionSource, HasHistoryType
 {
   // id	false		ID	none	A valid id as defined in [XML Schema]	Identifier for this pseudo-state. See 3.14 IDs for details.
   public id: identifier;
@@ -414,6 +494,7 @@ export class ScxmlHistory implements HasIdentifier, TransitionSource, HasHistory
   constructor(options: {
     id: string
   }) {
+    super();
     this.id = options.id;
   }
 
@@ -437,10 +518,17 @@ export class ScxmlHistory implements HasIdentifier, TransitionSource, HasHistory
       throw new Error(`Transition with id ${transitionId} not found.`);
     }
   }
+
+  public accept<R>(v: Scxml<R>): R {
+    this.transitions.forEach(transition => {
+      v.transition(transition);
+    });
+    return v.history(this);
+  }
 }
 
 // Transitions between states are triggered by events and conditionalized via guard conditions. They may contain executable content, which is executed when the transition is taken.
-export class ScxmlTransition implements HasIdentifier, HasTransitionType, HasEventNames, HasTarget {
+export class ScxmlTransition extends ScxmlBase implements HasIdentifier, HasTransitionType, HasEventNames, HasTarget {
 
   // Not a part of the SCXML spec
   public id: identifier;
@@ -459,6 +547,7 @@ export class ScxmlTransition implements HasIdentifier, HasTransitionType, HasEve
   constructor(options: {
     id: string
   }) {
+    super();
     this.id = options.id;
   }
 
@@ -486,12 +575,14 @@ export class ScxmlTransition implements HasIdentifier, HasTransitionType, HasEve
   public setTransitionTarget(target: identifier): void {
     this.target = target;
   }
+
+  public accept<R>(v: Scxml<R>): R {
+    return v.transition(this);
+  }
 }
 
-
-
-
-export class SCXMLVisitor implements SCXMLStructureVisitor<void> {
+export class ScxmlStructureVisitor implements SCXMLStructureVisitor<void> {
+  private _id = crypto.randomUUID();
 
   public document?: ScxmlDoc = undefined;
   private stateMap = new Map<string, ScxmlState>();
@@ -505,20 +596,14 @@ export class SCXMLVisitor implements SCXMLStructureVisitor<void> {
   }
 
   scxml(node: SCXML): void {
-
     const document = new ScxmlDoc();
 
-    if(node.initial) {
-      document.setInitial(node.initial);
-    }
     if(node.name) {
       document.setName(node.name);
     }
 
     Object.entries(node.xmlns).forEach(([key, value]) => {
-      if (key === "scxml") {
-        // Default SCXML namespace is already set
-      } else if (value) {
+      if (key !== "scxml" && value) {
         document.setNamespace(key, value);
       }
     });
@@ -542,14 +627,15 @@ export class SCXMLVisitor implements SCXMLStructureVisitor<void> {
       }
     });
 
+    if(node.initial) {
+      document.setInitial(node.initial);
+    }
+
     this.document = document;
   }
   state(node: State): void {
+
     const state = new ScxmlState({ id: node.id });
-      
-    if(node.initial) {
-      state.setInitial(node.initial);
-    }
 
     node.transitions.forEach(transitionNode => {
       const transition = this.transitionMap.get(transitionNode.id);
@@ -583,6 +669,10 @@ export class SCXMLVisitor implements SCXMLStructureVisitor<void> {
         state.addHistory(history);
       }
     });
+
+    if(node.initial) {
+      state.setInitial(node.initial);
+    }
 
     this.stateMap.set(node.id, state);
   }

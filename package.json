@@ -47,11 +47,15 @@
   "dependencies": {
     "@xmldom/xmldom": "^0.9.10"
   },
+  "overrides": {
+    "babel-plugin-istanbul": "^8.0.0"
+  },
   "devDependencies": {
-    "@types/jest": "^29.0.0",
+    "@types/jest": "^30.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.0.0",
+    "jest": "^30.4.2",
     "jiti": "^2.7.0",
     "ts-jest": "^29.0.0",
     "typescript": "^5.4.0"

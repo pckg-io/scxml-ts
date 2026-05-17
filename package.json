@@ -25,6 +25,7 @@
     }
   },
   "scripts": {
+    "install:deps": "npx -y npm@11.14.0 install",
     "build": "npm run build:cjs && npm run build:esm",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:esm": "tsc -p tsconfig.esm.json",
@@ -42,6 +43,7 @@
     "typescript"
   ],
   "license": "MIT",
+  "packageManager": "npm@11.14.0",
   "dependencies": {
     "@xmldom/xmldom": "^0.9.10"
   },

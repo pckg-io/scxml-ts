@@ -104,7 +104,7 @@ console.log(xmlString);
 
 ```bash
 # Install dependencies
-npm install
+npm run install:deps
 
 # Build the project
 npm run build
@@ -115,6 +115,9 @@ npm test
 # Lint the codebase
 npm run lint
 ```
+
+The repo is pinned to `npm@11.14.0` via `packageManager`, and `npm run install:deps`
+uses that same npm version to regenerate a stable lockfile.
 
 ## Note
 

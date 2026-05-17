@@ -1,6 +1,6 @@
 {
   "name": "scxml-ts",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "TypeScript implementation of the W3C SCXML 1.0 data model, parser, serializer, and utilities.",
   "author": "Sam Chapman",
   "repository": {
@@ -43,7 +43,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@xmldom/xmldom": "^0.8.10"
+    "@xmldom/xmldom": "^0.9.10"
   },
   "devDependencies": {
     "@types/jest": "^29.0.0",

@@ -21,9 +21,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-      - name: Update npm for Node 24
-        if: matrix.node-version == '24.x'
-        run: npm install -g npm@^11.14.0
       - name: ⚙️ Install xmllint
         run: |
           sudo apt-get update
